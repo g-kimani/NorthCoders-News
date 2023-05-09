@@ -1,6 +1,6 @@
 # Northcoders News API
 
-# # Required Setup
+## Required Setup
 
 A test and development environment variable need to be setup for connection to local databases.
 
