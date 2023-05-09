@@ -19,7 +19,7 @@ describe("/api/topics", () => {
   });
 });
 
-describe.only("/api/articles/:article_id", () => {
+describe("/api/articles/:article_id", () => {
   test("GET - status: 200 - responds with article object with correct keys", () => {
     return request(app)
       .get("/api/articles/1")
