@@ -45,23 +45,31 @@ exports.createArticleComment = (article_id, comment) => {
 
   const { username, body } = comment;
 
-  if (typeof username !== "string" || typeof body !== "string") {
-    return Promise.reject({
-      status: 400,
-      message: "Bad Request: username and body must be type string",
-    });
-  }
+  return checkUserExists(username).then((user) => {
+    if (!user) {
+      return Promise.reject({
+        status: 400,
+        message: "Bad Request: User does not exist",
+      });
+    }
 
-  const insertCommentQuery = format(
-    `
-    INSERT INTO comments
-    (body, article_id, author)
-    VALUES
-    %L
-    RETURNING *;
-  `,
-    [[body, article_id, username]]
-  );
+    const insertCommentQuery = format(
+      `
+      INSERT INTO comments
+      (body, article_id, author)
+      VALUES
+      %L
+      RETURNING *;
+    `,
+      [[body, article_id, username]]
+    );
 
-  return db.query(insertCommentQuery).then((result) => result.rows);
+    return db.query(insertCommentQuery).then((result) => result.rows[0]);
+  });
+};
+
+const checkUserExists = (username) => {
+  return db
+    .query(`SELECT * FROM users WHERE username = $1`, [username])
+    .then((result) => result.rows[0]);
 };

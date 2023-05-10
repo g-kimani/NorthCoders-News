@@ -103,10 +103,10 @@ describe("ARTICLES", () => {
   });
 });
 
-describe.skip("POST /api/articles/:article_id/comments", () => {
+describe("POST /api/articles/:article_id/comments", () => {
   test("POST - status: 201 - responds with posted comment", () => {
     const sendComment = {
-      username: "test",
+      username: "butter_bridge",
       body: "I am a test comment",
     };
     return request(app)
@@ -115,11 +115,26 @@ describe.skip("POST /api/articles/:article_id/comments", () => {
       .expect(201)
       .then((response) => {
         const { comment } = response.body;
-        expect(comment).toHaveProperty("comment_id", 20);
+        console.log(comment);
+        expect(comment).toHaveProperty("comment_id", 19);
         expect(comment).toHaveProperty("votes", 0);
         expect(comment).toHaveProperty("created_at", expect.any(String));
         expect(comment).toHaveProperty("body", "I am a test comment");
-        expect(comment).toHaveProperty("author", "test");
+        expect(comment).toHaveProperty("author", "butter_bridge");
+      });
+  });
+  test("POST - status: 400 - error if username does not exist", () => {
+    const sendComment = {
+      username: 13123,
+      body: "I am a body",
+    };
+    return request(app)
+      .post("/api/articles/adasds/comments")
+      .send(sendComment)
+      .expect(400)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("Bad Request: User does not exist");
       });
   });
 });
