@@ -156,7 +156,6 @@ describe("POST /api/articles/:article_id/comments", () => {
       .expect(201)
       .then((response) => {
         const { comment } = response.body;
-        console.log(comment);
         expect(comment).toHaveProperty("comment_id", 19);
         expect(comment).toHaveProperty("votes", 0);
         expect(comment).toHaveProperty("created_at", expect.any(String));
@@ -164,18 +163,46 @@ describe("POST /api/articles/:article_id/comments", () => {
         expect(comment).toHaveProperty("author", "butter_bridge");
       });
   });
-  test("POST - status: 400 - error if username does not exist", () => {
+  test("POST - status: 404 - error if username does not exist", () => {
     const sendComment = {
       username: 13123,
       body: "I am a body",
     };
     return request(app)
-      .post("/api/articles/adasds/comments")
+      .post("/api/articles/10/comments")
+      .send(sendComment)
+      .expect(404)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("404 Not Found");
+      });
+  });
+  test("POST - status: 404 - error if article does not exist", () => {
+    const sendComment = {
+      username: "butter_bridge",
+      body: "I am a body",
+    };
+    return request(app)
+      .post("/api/articles/10001332/comments")
+      .send(sendComment)
+      .expect(404)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("404 Not Found");
+      });
+  });
+  test("POST - status: 400 - error if article_id is not a valid number", () => {
+    const sendComment = {
+      username: "butter_bridge",
+      body: "I am a body",
+    };
+    return request(app)
+      .post("/api/articles/nonsense/comments")
       .send(sendComment)
       .expect(400)
       .then((response) => {
         const { message } = response.body;
-        expect(message).toBe("Bad Request: User does not exist");
+        expect(message).toBe("Bad Request: Invalid input");
       });
   });
 });

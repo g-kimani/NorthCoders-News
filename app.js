@@ -23,7 +23,6 @@ app.get("/api/articles/:article_id/comments", getArticleComments);
 app.post("/api/articles/:article_id/comments", postArticleComment);
 
 app.use((err, req, res, next) => {
-  console.log(err);
   if (err.status && err.message) {
     res.status(err.status).send({ message: err.message });
   } else {
@@ -33,8 +32,18 @@ app.use((err, req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
+  //22P02	- invalid_text_representation
   if (err.code === "22P02") {
     res.status(400).send({ message: "Bad Request: Invalid input" });
+  } else {
+    next(err);
+  }
+});
+
+app.use((err, req, res, next) => {
+  // 23503 - foreign_key_violation
+  if (err.code === "23503") {
+    res.status(404).send({ message: "404 Not Found" });
   }
 });
 module.exports = app;
