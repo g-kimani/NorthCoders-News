@@ -40,6 +40,8 @@ describe("ARTICLES", () => {
         .expect(200)
         .then((response) => {
           const { articles } = response.body;
+          // assert that we actually got articles
+          expect(articles.length > 0).toBe(true);
           articles.forEach((article) => {
             expect(article).toHaveProperty("article_id", expect.any(Number));
             expect(article).toHaveProperty("author", expect.any(String));
