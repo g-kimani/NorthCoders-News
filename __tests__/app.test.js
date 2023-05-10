@@ -69,3 +69,24 @@ describe("/api/articles/:article_id", () => {
       });
   });
 });
+
+describe.skip("POST /api/articles/:article_id/comments", () => {
+  test("POST - status: 201 - responds with posted comment", () => {
+    const sendComment = {
+      username: "test",
+      body: "I am a test comment",
+    };
+    return request(app)
+      .post("/api/articles/1/comments")
+      .send(sendComment)
+      .expect(201)
+      .then((response) => {
+        const { comment } = response.body;
+        expect(comment).toHaveProperty("comment_id", 20);
+        expect(comment).toHaveProperty("votes", 0);
+        expect(comment).toHaveProperty("created_at", expect.any(String));
+        expect(comment).toHaveProperty("body", "I am a test comment");
+        expect(comment).toHaveProperty("author", "test");
+      });
+  });
+});
