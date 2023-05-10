@@ -13,12 +13,6 @@ exports.selectArticles = () => {
 };
 
 exports.selectArticleById = (article_id) => {
-  if (isNaN(article_id)) {
-    return Promise.reject({
-      status: 400,
-      message: "Bad Request: Article ID must be a number!",
-    });
-  }
   return db
     .query(`SELECT * FROM articles WHERE article_id = $1`, [article_id])
     .then((result) => {
@@ -35,13 +29,6 @@ exports.selectArticleById = (article_id) => {
 };
 
 exports.selectArticleComments = (article_id) => {
-  if (isNaN(article_id)) {
-    return Promise.reject({
-      status: 400,
-      message: "Bad Request: Article ID must be a number!",
-    });
-  }
-
   return db
     .query(
       `

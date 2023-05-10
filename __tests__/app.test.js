@@ -88,7 +88,7 @@ describe("ARTICLES", () => {
         .expect(400)
         .then((response) => {
           const { message } = response.body;
-          expect(message).toBe("Bad Request: Article ID must be a number!");
+          expect(message).toBe("Bad Request: Invalid input");
         });
     });
     test("GET - status: 404 - responds with 404 if article_id does not exist", () => {
@@ -101,45 +101,45 @@ describe("ARTICLES", () => {
         });
     });
   });
-});
 
-describe("/api/articles/:article_id/comments", () => {
-  test("GET - status: 200 - responds with list of comments for article, ordered date descending", () => {
-    return request(app)
-      .get("/api/articles/1/comments")
-      .expect(200)
-      .then((response) => {
-        const { comments } = response.body;
-        comments.forEach((comment) => {
-          expect(comment).toHaveProperty("comment_id", expect.any(Number));
-          expect(comment).toHaveProperty("votes", expect.any(Number));
-          expect(comment).toHaveProperty("created_at", expect.any(String));
-          expect(comment).toHaveProperty("body", expect.any(String));
-          // we are checking article 1
-          expect(comment).toHaveProperty("article_id", 1);
+  describe("/api/articles/:article_id/comments", () => {
+    test("GET - status: 200 - responds with list of comments for article, ordered date descending", () => {
+      return request(app)
+        .get("/api/articles/1/comments")
+        .expect(200)
+        .then((response) => {
+          const { comments } = response.body;
+          comments.forEach((comment) => {
+            expect(comment).toHaveProperty("comment_id", expect.any(Number));
+            expect(comment).toHaveProperty("votes", expect.any(Number));
+            expect(comment).toHaveProperty("created_at", expect.any(String));
+            expect(comment).toHaveProperty("body", expect.any(String));
+            // we are checking article 1
+            expect(comment).toHaveProperty("article_id", 1);
+          });
+          expect(comments).toBeSortedBy("created_at", {
+            descending: true,
+            compare: (a, b) => new Date(a).getTime() - new Date(b).getTime(),
+          });
         });
-        expect(comments).toBeSortedBy("created_at", {
-          descending: true,
-          compare: (a, b) => new Date(a).getTime() - new Date(b).getTime(),
+    });
+    test("GET - status: 400 - invalid article id (anything NAN) given", () => {
+      return request(app)
+        .get("/api/articles/invalidId/comments")
+        .expect(400)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("Bad Request: Invalid input");
         });
-      });
-  });
-  test("GET - status: 400 - invalid article id (anything NAN) given", () => {
-    return request(app)
-      .get("/api/articles/invalidId/comments")
-      .expect(400)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("Bad Request: Article ID must be a number!");
-      });
-  });
-  test("GET - status: 404 - article_id is not found", () => {
-    return request(app)
-      .get("/api/articles/1011290/comments")
-      .expect(404)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("Not Found: Article 1011290 does not exist");
-      });
+    });
+    test("GET - status: 404 - article_id is not found", () => {
+      return request(app)
+        .get("/api/articles/1011290/comments")
+        .expect(404)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("Not Found: Article 1011290 does not exist");
+        });
+    });
   });
 });
