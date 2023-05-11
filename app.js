@@ -28,8 +28,13 @@ app.use((err, req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
-  if (err.code === "22P02") {
+  const badRequestCodes = ["42703", "22P02", "42601"];
+  if (badRequestCodes.includes(err.code)) {
     res.status(400).send({ message: "Bad Request: Invalid input" });
   }
+});
+
+app.use((err, req, res, next) => {
+  console.log(err);
 });
 module.exports = app;
