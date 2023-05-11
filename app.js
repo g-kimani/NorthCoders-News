@@ -6,17 +6,22 @@ const {
   getArticleById,
   getArticleComments,
   getArticles,
+  patchArticleById,
 } = require("./controllers/articles.controller.js");
 const { removeComment } = require("./controllers/comments.controller.js");
 
 const app = express();
+app.use(express.json());
 
 app.get("/api", getApiInfo);
 
 app.get("/api/topics", getTopics);
 
 app.get("/api/articles", getArticles);
+
 app.get("/api/articles/:article_id", getArticleById);
+app.patch("/api/articles/:article_id", patchArticleById);
+
 app.get("/api/articles/:article_id/comments", getArticleComments);
 
 app.delete("/api/comments/:comment_id", removeComment);

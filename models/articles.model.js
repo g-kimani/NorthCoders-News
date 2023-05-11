@@ -49,3 +49,29 @@ exports.selectArticleComments = (article_id) => {
       }
     });
 };
+
+exports.updateArticle = (article_id, updateProperties) => {
+  const { incVotes } = updateProperties;
+  return db
+    .query(
+      `
+    UPDATE articles
+    SET
+      votes = votes + $1
+    WHERE
+      article_id = $2
+    RETURNING *;
+    `,
+      [incVotes, article_id]
+    )
+    .then((result) => {
+      if (result.rowCount === 0) {
+        return Promise.reject({
+          status: 404,
+          message: `Not Found: Article ${article_id} does not exist`,
+        });
+      } else {
+        return result.rows[0];
+      }
+    });
+};
