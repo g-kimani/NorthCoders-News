@@ -8,6 +8,7 @@ const {
   getArticles,
   patchArticleById,
 } = require("./controllers/articles.controller.js");
+const { removeComment } = require("./controllers/comments.controller.js");
 
 const app = express();
 app.use(express.json());
@@ -22,6 +23,8 @@ app.get("/api/articles/:article_id", getArticleById);
 app.patch("/api/articles/:article_id", patchArticleById);
 
 app.get("/api/articles/:article_id/comments", getArticleComments);
+
+app.delete("/api/comments/:comment_id", removeComment);
 
 app.use((err, req, res, next) => {
   if (err.status && err.message) {

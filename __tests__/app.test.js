@@ -227,3 +227,27 @@ describe("PATCH /api/articles/:article_id", () => {
       });
   });
 });
+
+describe("DELETE /api/comments/:comment_id", () => {
+  test("DELETE - status: 204 - responds with 204 when succesful and no content", () => {
+    return request(app).delete("/api/comments/2").expect(204);
+  });
+  test("DELETE - status: 404 - comment_id cannot be found", () => {
+    return request(app)
+      .delete("/api/comments/123043290")
+      .expect(404)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("404: Not Found");
+      });
+  });
+  test("DELETE - status: 400 - comment_id provided is not correct type number", () => {
+    return request(app)
+      .delete("/api/comments/nonsense")
+      .expect(400)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("Bad Request: Invalid input");
+      });
+  });
+});
