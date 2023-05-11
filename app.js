@@ -42,8 +42,8 @@ app.use((err, req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
-  //22P02	- invalid_text_representation
-  if (err.code === "22P02" || err.code === "23502") {
+  const badRequestCodes = ["42703", "22P02", "42601", "23502"];
+  if (badRequestCodes.includes(err.code)) {
     res.status(400).send({ message: "Bad Request: Invalid input" });
   } else if (err.code === "23503") {
     // 23503 - foreign_key_violation
@@ -53,4 +53,7 @@ app.use((err, req, res, next) => {
   }
 });
 
+app.use((err, req, res, next) => {
+  console.log(err);
+});
 module.exports = app;

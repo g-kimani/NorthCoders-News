@@ -1,16 +1,41 @@
-const db = require("../db/connection.js");
 const format = require("pg-format");
+const db = require("../db/connection.js");
+const { selectTopicBySlug } = require("./topics.model.js");
 
-exports.selectArticles = () => {
-  return db
-    .query(
-      `SELECT articles.article_id, articles.author, articles.title, articles.topic, articles.created_at, articles.votes, articles.article_img_url, CAST(COUNT(comment_id) AS INT) AS comment_count
+exports.selectArticles = async ({
+  topic,
+  sort_by = "created_at",
+  order = "desc",
+}) => {
+  let selectQuery = format(
+    `
+      SELECT articles.article_id, articles.author, articles.title, articles.topic, articles.created_at, articles.votes, articles.article_img_url, CAST(COUNT(comment_id) AS INT) AS comment_count
       FROM articles
-      LEFT JOIN comments ON comments.article_id = articles.article_id
-      GROUP BY articles.article_id
-      ORDER BY articles.created_at DESC;`
-    )
-    .then((result) => result.rows);
+      LEFT OUTER JOIN comments ON comments.article_id = articles.article_id
+      `
+  );
+
+  if (topic) {
+    const topicObject = await selectTopicBySlug(topic);
+    if (topicObject) {
+      selectQuery += format(`WHERE articles.topic = '%s'`, topic);
+    } else {
+      return Promise.reject({
+        status: 404,
+        message: "404 Topic not found",
+      });
+    }
+  }
+
+  selectQuery += format(
+    `
+    GROUP BY articles.article_id
+    ORDER BY articles.%I %s;`,
+    sort_by,
+    order
+  );
+
+  return db.query(selectQuery).then((result) => result.rows);
 };
 
 exports.selectArticleById = (article_id) => {

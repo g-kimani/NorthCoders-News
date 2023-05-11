@@ -65,6 +65,88 @@ describe("ARTICLES", () => {
           });
         });
     });
+    test("GET - status: 404 - returns 404 for topic that doesnt exist", () => {
+      return request(app)
+        .get("/api/articles?topic=nonsense")
+        .expect(404)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("404 Topic not found");
+        });
+    });
+    test("GET - status: 200 - returns items sorted by query", () => {
+      return request(app)
+        .get("/api/articles?sort_by=votes")
+        .expect(200)
+        .then((response) => {
+          const { articles } = response.body;
+          expect(articles).toBeSortedBy("votes", {
+            descending: true,
+          });
+        });
+    });
+    test("GET - status: 200 - filters out results on topic", () => {
+      return request(app)
+        .get("/api/articles?topic=mitch")
+        .expect(200)
+        .then((response) => {
+          const { articles } = response.body;
+          // 11 mitch articles
+          expect(articles).toHaveLength(11);
+          articles.forEach((article) => {
+            expect(article).toHaveProperty("topic", "mitch");
+          });
+        });
+    });
+    test("GET - status: 200 - returns empty array if topic has no articles", () => {
+      return request(app)
+        .get("/api/articles?topic=test-topic")
+        .expect(200)
+        .then((response) => {
+          const { articles } = response.body;
+          expect(articles).toHaveLength(0);
+          expect(articles).toEqual([]);
+        });
+    });
+    test("GET - status: 200 - order query works", () => {
+      return request(app)
+        .get("/api/articles?order=asc")
+        .then((response) => {
+          const { articles } = response.body;
+          expect(articles).toBeSortedBy("created_at", {
+            descending: false,
+            compare: (a, b) => new Date(a).getTime() - new Date(b).getTime(),
+          });
+        });
+    });
+    test("GET - status: 200 - multiple queries work together", () => {
+      return request(app)
+        .get("/api/articles?topic=mitch&sort_by=votes&order=asc")
+        .expect(200)
+        .then((response) => {
+          const { articles } = response.body;
+          expect(articles).toHaveLength(11);
+          expect(articles).toBeSortedBy("votes", { descending: false });
+        });
+    });
+    test("GET - status: 400 - order query is not a valid input(asc/desc)", () => {
+      return request(app)
+        .get("/api/articles?order=back")
+        .expect(400)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("Bad Request: Invalid input");
+        });
+    });
+    test("GET - status: 400 - sort_by query is not a valid column", () => {
+      return request(app)
+        .get("/api/articles?sort_by=nonsense")
+        .expect(400)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("Bad Request: Invalid input");
+        });
+    });
   });
   describe("/api/articles/:article_id", () => {
     test("GET - status: 200 - responds with article object with correct keys", () => {
