@@ -42,6 +42,8 @@ describe("ARTICLES", () => {
           const { articles } = response.body;
           // assert that we actually got articles
           expect(articles.length > 0).toBe(true);
+          // test data has 12
+          expect(articles).toHaveLength(12);
           articles.forEach((article) => {
             expect(article).toHaveProperty("article_id", expect.any(Number));
             expect(article).toHaveProperty("author", expect.any(String));
@@ -53,7 +55,7 @@ describe("ARTICLES", () => {
               "article_img_url",
               expect.any(String)
             );
-            expect(article).toHaveProperty("comment_count", expect.any(String));
+            expect(article).toHaveProperty("comment_count", expect.any(Number));
             // article shouldn't have body
             expect(typeof article.body).toBe("undefined");
           });
@@ -89,7 +91,7 @@ describe("ARTICLES", () => {
             "article_img_url",
             "https://images.pexels.com/photos/158651/news-newsletter-newspaper-information-158651.jpeg?w=700&h=700"
           );
-          expect(article).toHaveProperty("comment_count", "11");
+          expect(article).toHaveProperty("comment_count", 11);
         });
     });
     test("GET - status: 400 - responds with error if user provides invalid id type", () => {
@@ -149,6 +151,15 @@ describe("ARTICLES", () => {
         .then((response) => {
           const { message } = response.body;
           expect(message).toBe("Not Found: Article 1011290 does not exist");
+        });
+    });
+    test("GET - status: 200 - responds with empty array for article without comments", () => {
+      return request(app)
+        .get("/api/articles/4/comments")
+        .expect(200)
+        .then((response) => {
+          const { comments } = response.body;
+          expect(comments).toHaveLength(0);
         });
     });
   });
