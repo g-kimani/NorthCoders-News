@@ -1,4 +1,5 @@
 const db = require("../db/connection.js");
+const format = require("pg-format");
 
 exports.selectArticles = () => {
   return db
@@ -26,6 +27,23 @@ exports.selectArticleById = (article_id) => {
         return result.rows[0];
       }
     });
+};
+
+exports.createArticleComment = (article_id, comment) => {
+  const { username, body } = comment;
+
+  const insertCommentQuery = format(
+    `
+    INSERT INTO comments
+    (body, article_id, author)
+    VALUES
+    %L
+    RETURNING *;
+  `,
+    [[body, article_id, username]]
+  );
+
+  return db.query(insertCommentQuery).then((result) => result.rows[0]);
 };
 
 exports.selectArticleComments = (article_id) => {

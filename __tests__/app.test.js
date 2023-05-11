@@ -144,6 +144,82 @@ describe("ARTICLES", () => {
   });
 });
 
+describe("POST /api/articles/:article_id/comments", () => {
+  test("POST - status: 201 - responds with posted comment", () => {
+    const sendComment = {
+      username: "butter_bridge",
+      body: "I am a test comment",
+    };
+    return request(app)
+      .post("/api/articles/1/comments")
+      .send(sendComment)
+      .expect(201)
+      .then((response) => {
+        const { comment } = response.body;
+        expect(comment).toHaveProperty("comment_id", 19);
+        expect(comment).toHaveProperty("votes", 0);
+        expect(comment).toHaveProperty("created_at", expect.any(String));
+        expect(comment).toHaveProperty("body", "I am a test comment");
+        expect(comment).toHaveProperty("author", "butter_bridge");
+      });
+  });
+  test("POST - status: 400 - error if no username or body provided", () => {
+    const sendComment = {
+      username: "butter_bridge",
+    };
+    return request(app)
+      .post("/api/articles/1/comments")
+      .send(sendComment)
+      .expect(400)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("Bad Request: Invalid input");
+      });
+  });
+  test("POST - status: 404 - error if username does not exist", () => {
+    const sendComment = {
+      username: 13123,
+      body: "I am a body",
+    };
+    return request(app)
+      .post("/api/articles/10/comments")
+      .send(sendComment)
+      .expect(404)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("404 Not Found");
+      });
+  });
+  test("POST - status: 404 - error if article does not exist", () => {
+    const sendComment = {
+      username: "butter_bridge",
+      body: "I am a body",
+    };
+    return request(app)
+      .post("/api/articles/10001332/comments")
+      .send(sendComment)
+      .expect(404)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("404 Not Found");
+      });
+  });
+  test("POST - status: 400 - error if article_id is not a valid number", () => {
+    const sendComment = {
+      username: "butter_bridge",
+      body: "I am a body",
+    };
+    return request(app)
+      .post("/api/articles/nonsense/comments")
+      .send(sendComment)
+      .expect(400)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("Bad Request: Invalid input");
+      });
+  });
+});
+
 describe("PATCH /api/articles/:article_id", () => {
   test("PATCH - status: 200 - responds with updated article", () => {
     const patchRequest = {
