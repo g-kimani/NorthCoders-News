@@ -29,6 +29,7 @@ exports.postArticleComment = (req, res, next) => {
     })
     .catch((err) => next(err));
 };
+
 exports.getArticleComments = (req, res, next) => {
   const { article_id } = req.params;
   selectArticleComments(article_id)

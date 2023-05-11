@@ -163,6 +163,19 @@ describe("POST /api/articles/:article_id/comments", () => {
         expect(comment).toHaveProperty("author", "butter_bridge");
       });
   });
+  test("POST - status: 400 - error if no username or body provided", () => {
+    const sendComment = {
+      username: "butter_bridge",
+    };
+    return request(app)
+      .post("/api/articles/1/comments")
+      .send(sendComment)
+      .expect(400)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("Bad Request: Invalid input");
+      });
+  });
   test("POST - status: 404 - error if username does not exist", () => {
     const sendComment = {
       username: 13123,

@@ -33,17 +33,14 @@ app.use((err, req, res, next) => {
 
 app.use((err, req, res, next) => {
   //22P02	- invalid_text_representation
-  if (err.code === "22P02") {
+  if (err.code === "22P02" || err.code === "23502") {
     res.status(400).send({ message: "Bad Request: Invalid input" });
+  } else if (err.code === "23503") {
+    // 23503 - foreign_key_violation
+    res.status(404).send({ message: "404 Not Found" });
   } else {
     next(err);
   }
 });
 
-app.use((err, req, res, next) => {
-  // 23503 - foreign_key_violation
-  if (err.code === "23503") {
-    res.status(404).send({ message: "404 Not Found" });
-  }
-});
 module.exports = app;
