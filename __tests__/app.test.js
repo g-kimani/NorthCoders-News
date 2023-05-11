@@ -143,3 +143,74 @@ describe("ARTICLES", () => {
     });
   });
 });
+
+describe("PATCH /api/articles/:article_id", () => {
+  test("PATCH - status: 200 - responds with updated article", () => {
+    const patchRequest = {
+      incVotes: 1,
+    };
+    return request(app)
+      .patch("/api/articles/1")
+      .send(patchRequest)
+      .expect(200)
+      .then((response) => {
+        const { article } = response.body;
+        expect(article).toHaveProperty("article_id", 1);
+        expect(article).toHaveProperty("author", "butter_bridge");
+        expect(article).toHaveProperty(
+          "title",
+          "Living in the shadow of a great man"
+        );
+        expect(article).toHaveProperty(
+          "body",
+          "I find this existence challenging"
+        );
+        expect(article).toHaveProperty("topic", "mitch");
+        expect(article).toHaveProperty("created_at", expect.any(String));
+        expect(article).toHaveProperty("votes", 101);
+        expect(article).toHaveProperty(
+          "article_img_url",
+          "https://images.pexels.com/photos/158651/news-newsletter-newspaper-information-158651.jpeg?w=700&h=700"
+        );
+      });
+  });
+  test("PATCH - status: 404 - article id does not exist", () => {
+    const patchRequest = {
+      incVotes: 1,
+    };
+    return request(app)
+      .patch("/api/articles/101321312")
+      .send(patchRequest)
+      .expect(404)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("Not Found: Article 101321312 does not exist");
+      });
+  });
+  test("PATCH - status: 400 - article id is not a number", () => {
+    const patchRequest = {
+      incVotes: 1,
+    };
+    return request(app)
+      .patch("/api/articles/nonsense")
+      .send(patchRequest)
+      .expect(400)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("Bad Request: Invalid input");
+      });
+  });
+  test("PATCH - status: 400 - incVotes is not a number", () => {
+    const patchRequest = {
+      incVotes: "nonsense",
+    };
+    return request(app)
+      .patch("/api/articles/1")
+      .send(patchRequest)
+      .expect(400)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("Bad Request: Invalid input");
+      });
+  });
+});
