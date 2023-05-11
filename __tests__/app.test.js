@@ -323,6 +323,30 @@ describe("POST /api/articles/:article_id/comments", () => {
   });
 });
 
+describe("DELETE /api/comments/:comment_id", () => {
+  test("DELETE - status: 204 - responds with 204 when succesful and no content", () => {
+    return request(app).delete("/api/comments/2").expect(204);
+  });
+  test("DELETE - status: 404 - comment_id cannot be found", () => {
+    return request(app)
+      .delete("/api/comments/123043290")
+      .expect(404)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("404: Not Found");
+      });
+  });
+  test("DELETE - status: 400 - comment_id provided is not correct type number", () => {
+    return request(app)
+      .delete("/api/comments/nonsense")
+      .expect(400)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("Bad Request: Invalid input");
+      });
+  });
+});
+
 describe("PATCH /api/articles/:article_id", () => {
   test("PATCH - status: 200 - responds with updated article", () => {
     const patchRequest = {
@@ -407,30 +431,6 @@ describe("PATCH /api/articles/:article_id", () => {
   });
 });
 
-describe("DELETE /api/comments/:comment_id", () => {
-  test("DELETE - status: 204 - responds with 204 when succesful and no content", () => {
-    return request(app).delete("/api/comments/2").expect(204);
-  });
-  test("DELETE - status: 404 - comment_id cannot be found", () => {
-    return request(app)
-      .delete("/api/comments/123043290")
-      .expect(404)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("404: Not Found");
-      });
-  });
-  test("DELETE - status: 400 - comment_id provided is not correct type number", () => {
-    return request(app)
-      .delete("/api/comments/nonsense")
-      .expect(400)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("Bad Request: Invalid input");
-      });
-  });
-});
-
 describe("GET /api/users", () => {
   test("GET - status: 200 - Responds with array of users", () => {
     return request(app)
@@ -444,6 +444,32 @@ describe("GET /api/users", () => {
           expect(user).toHaveProperty("name", expect.any(String));
           expect(user).toHaveProperty("avatar_url", expect.any(String));
         });
+      });
+  });
+});
+
+describe("/api/users/:username", () => {
+  test("GET - status: 200 - responds with an object with users details", () => {
+    return request(app)
+      .get("/api/users/butter_bridge")
+      .expect(200)
+      .then((response) => {
+        const { user } = response.body;
+        expect(user).toHaveProperty("username", "butter_bridge");
+        expect(user).toHaveProperty("name", "jonny");
+        expect(user).toHaveProperty(
+          "avatar_url",
+          "https://www.healthytherapies.com/wp-content/uploads/2016/06/Lime3.jpg"
+        );
+      });
+  });
+  test("GET - status: 404 - responds with error if username not found", () => {
+    return request(app)
+      .get("/api/users/not-in-data")
+      .expect(404)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("404 Not found");
       });
   });
 });

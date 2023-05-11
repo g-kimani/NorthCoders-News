@@ -9,7 +9,10 @@ const {
   getArticles,
   patchArticleById,
 } = require("./controllers/articles.controller.js");
-const { getUsers } = require("./controllers/users.controller.js");
+const {
+  getUsers,
+  getUserByUsername,
+} = require("./controllers/users.controller.js");
 const { removeComment } = require("./controllers/comments.controller.js");
 
 const app = express();
@@ -31,6 +34,8 @@ app.get("/api/articles/:article_id/comments", getArticleComments);
 app.post("/api/articles/:article_id/comments", postArticleComment);
 
 app.delete("/api/comments/:comment_id", removeComment);
+
+app.get("/api/users/:username", getUserByUsername);
 
 app.use((err, req, res, next) => {
   if (err.status && err.message) {
