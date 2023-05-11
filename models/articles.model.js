@@ -54,6 +54,23 @@ exports.selectArticleById = (article_id) => {
     });
 };
 
+exports.createArticleComment = (article_id, comment) => {
+  const { username, body } = comment;
+
+  const insertCommentQuery = format(
+    `
+    INSERT INTO comments
+    (body, article_id, author)
+    VALUES
+    %L
+    RETURNING *;
+  `,
+    [[body, article_id, username]]
+  );
+
+  return db.query(insertCommentQuery).then((result) => result.rows[0]);
+};
+
 exports.selectArticleComments = (article_id) => {
   return db
     .query(
@@ -72,6 +89,32 @@ exports.selectArticleComments = (article_id) => {
         });
       } else {
         return result.rows;
+      }
+    });
+};
+
+exports.updateArticle = (article_id, updateProperties) => {
+  const { incVotes } = updateProperties;
+  return db
+    .query(
+      `
+    UPDATE articles
+    SET
+      votes = votes + $1
+    WHERE
+      article_id = $2
+    RETURNING *;
+    `,
+      [incVotes, article_id]
+    )
+    .then((result) => {
+      if (result.rowCount === 0) {
+        return Promise.reject({
+          status: 404,
+          message: `Not Found: Article ${article_id} does not exist`,
+        });
+      } else {
+        return result.rows[0];
       }
     });
 };
