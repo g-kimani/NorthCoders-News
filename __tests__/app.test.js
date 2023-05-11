@@ -98,6 +98,16 @@ describe("ARTICLES", () => {
           });
         });
     });
+    test("GET - status: 200 - returns empty array if topic has no articles", () => {
+      return request(app)
+        .get("/api/articles?topic=test-topic")
+        .expect(200)
+        .then((response) => {
+          const { articles } = response.body;
+          expect(articles).toHaveLength(0);
+          expect(articles).toEqual([]);
+        });
+    });
     test("GET - status: 200 - order query works", () => {
       return request(app)
         .get("/api/articles?order=asc")
