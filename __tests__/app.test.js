@@ -34,16 +34,17 @@ describe("/api/topics", () => {
 
 describe("ARTICLES", () => {
   describe("/api/articles", () => {
-    test("GET - status 200 - responds list of articles sorted date descending", () => {
+    test("GET - status 200 - responds list of articles sorted date descending limited to 10 and total count 12", () => {
       return request(app)
         .get("/api/articles")
         .expect(200)
         .then((response) => {
-          const { articles } = response.body;
+          const { articles, total_count } = response.body;
           // assert that we actually got articles
           expect(articles.length > 0).toBe(true);
           // test data has 12
-          expect(articles).toHaveLength(12);
+          expect(total_count).toBe(12);
+          expect(articles).toHaveLength(10);
           articles.forEach((article) => {
             expect(article).toHaveProperty("article_id", expect.any(Number));
             expect(article).toHaveProperty("author", expect.any(String));
@@ -87,7 +88,7 @@ describe("ARTICLES", () => {
     });
     test("GET - status: 200 - filters out results on topic", () => {
       return request(app)
-        .get("/api/articles?topic=mitch")
+        .get("/api/articles?topic=mitch&limit=12")
         .expect(200)
         .then((response) => {
           const { articles } = response.body;
@@ -98,12 +99,13 @@ describe("ARTICLES", () => {
           });
         });
     });
-    test("GET - status: 200 - returns empty array if topic has no articles", () => {
+    test("GET - status: 200 - returns empty array if topic has no articles and total_count is 0", () => {
       return request(app)
         .get("/api/articles?topic=test-topic")
         .expect(200)
         .then((response) => {
-          const { articles } = response.body;
+          const { articles, total_count } = response.body;
+          expect(total_count).toBe(0);
           expect(articles).toHaveLength(0);
           expect(articles).toEqual([]);
         });
@@ -121,7 +123,7 @@ describe("ARTICLES", () => {
     });
     test("GET - status: 200 - multiple queries work together", () => {
       return request(app)
-        .get("/api/articles?topic=mitch&sort_by=votes&order=asc")
+        .get("/api/articles?topic=mitch&sort_by=votes&order=asc&limit=12")
         .expect(200)
         .then((response) => {
           const { articles } = response.body;
@@ -588,7 +590,6 @@ describe("POST /api/articles", () => {
       .expect(404)
       .then((response) => {
         const { message } = response.body;
-        console.log(message);
         expect(message).toBe("404 Not Found");
       });
   });

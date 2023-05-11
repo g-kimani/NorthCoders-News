@@ -6,13 +6,18 @@ exports.selectArticles = async ({
   topic,
   sort_by = "created_at",
   order = "desc",
+  limit = 10,
+  p = 1,
 }) => {
   let selectQuery = format(
     `
-      SELECT articles.article_id, articles.author, articles.title, articles.topic, articles.created_at, articles.votes, articles.article_img_url, CAST(COUNT(comment_id) AS INT) AS comment_count
+      SELECT articles.article_id, articles.author, articles.title, articles.topic, articles.created_at, articles.votes, articles.article_img_url, CAST(COUNT(comment_id) AS INT) AS comment_count, (SELECT CAST(COUNT(*) AS INT) FROM articles ${
+        topic ? "WHERE topic = '%s'" : ""
+      }) AS total_count
       FROM articles
       LEFT OUTER JOIN comments ON comments.article_id = articles.article_id
-      `
+      `,
+    [topic]
   );
 
   if (topic) {
@@ -30,12 +35,29 @@ exports.selectArticles = async ({
   selectQuery += format(
     `
     GROUP BY articles.article_id
-    ORDER BY articles.%I %s;`,
+    ORDER BY articles.%I %s
+    LIMIT %s OFFSET %s`,
     sort_by,
-    order
+    order,
+    limit,
+    (Number(p) - 1) * limit
   );
 
-  return db.query(selectQuery).then((result) => result.rows);
+  return db.query(selectQuery).then(({ rows }) => {
+    return {
+      total_count: rows[0]?.total_count ?? 0,
+      articles: rows.map((row) => {
+        delete row.total_count;
+        return row;
+      }),
+    };
+  });
+};
+
+exports.getArticlesCount = () => {
+  return db
+    .query("SELECT CAST(COUNT(*) AS INT) AS total_count FROM articles")
+    .then((result) => result.rows[0].total_count);
 };
 
 exports.selectArticleById = (article_id) => {
