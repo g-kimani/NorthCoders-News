@@ -63,6 +63,29 @@ exports.selectArticleById = (article_id) => {
     });
 };
 
+exports.createArticle = ({
+  author,
+  title,
+  body,
+  topic,
+  article_img_url = "[default image here]",
+}) => {
+  const insertArticleQuery = format(
+    `INSERT INTO articles
+    (author, title, body, topic, article_img_url)
+    VALUES
+    %L
+    RETURNING *;
+    `,
+    [[author, title, body, topic, article_img_url]]
+  );
+
+  return db.query(insertArticleQuery).then((result) => {
+    const article = result.rows[0];
+    return this.selectArticleById(article.article_id);
+  });
+};
+
 exports.createArticleComment = (article_id, comment) => {
   const { username, body } = comment;
 
