@@ -532,3 +532,80 @@ describe("/api/users/:username", () => {
       });
   });
 });
+
+describe("POST /api/articles", () => {
+  test("POST - status: 201 - responds with created article", () => {
+    const postArticle = {
+      author: "butter_bridge",
+      title: "I am a test",
+      body: "I was created in a test",
+      topic: "paper",
+      article_img_url: "im_an_image.com",
+    };
+    return request(app)
+      .post("/api/articles")
+      .send(postArticle)
+      .expect(201)
+      .then((response) => {
+        const { article } = response.body;
+        expect(article).toHaveProperty("article_id", expect.any(Number));
+        expect(article).toHaveProperty("author", "butter_bridge");
+        expect(article).toHaveProperty("title", "I am a test");
+        expect(article).toHaveProperty("body", "I was created in a test");
+        expect(article).toHaveProperty("topic", "paper");
+        expect(article).toHaveProperty("created_at", expect.any(String));
+        expect(article).toHaveProperty("votes", 0);
+        expect(article).toHaveProperty("article_img_url", "im_an_image.com");
+        expect(article).toHaveProperty("comment_count", 0);
+      });
+  });
+  test("POST - status: 200 - default image given if none in request", () => {
+    const postArticle = {
+      author: "butter_bridge",
+      title: "I am a test 2",
+      body: "I was created in a test 2",
+      topic: "paper",
+    };
+    return request(app)
+      .post("/api/articles")
+      .send(postArticle)
+      .expect(201)
+      .then((response) => {
+        const { article } = response.body;
+        expect(article.article_img_url).toBe("[default image here]");
+      });
+  });
+  test("POST - status: 404 - author not found", () => {
+    const postArticle = {
+      author: "test_author",
+      title: "I am a test 3",
+      body: "I was created in a test 3",
+      topic: "paper",
+    };
+    return request(app)
+      .post("/api/articles")
+      .send(postArticle)
+      .expect(404)
+      .then((response) => {
+        const { message } = response.body;
+        console.log(message);
+        expect(message).toBe("404 Not Found");
+      });
+  });
+  test("POST - status: 404 - topic not found", () => {
+    const postArticle = {
+      author: "butter_bridge",
+      title: "I am a test 3",
+      body: "I was created in a test 3",
+      topic: "non-topic",
+    };
+    return request(app)
+      .post("/api/articles")
+      .send(postArticle)
+      .expect(404)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("404 Not Found");
+      });
+  });
+});
