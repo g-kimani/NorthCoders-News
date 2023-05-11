@@ -10,7 +10,10 @@ const {
   patchArticleById,
 } = require("./controllers/articles.controller.js");
 const { getUsers } = require("./controllers/users.controller.js");
-const { removeComment } = require("./controllers/comments.controller.js");
+const {
+  removeComment,
+  patchComment,
+} = require("./controllers/comments.controller.js");
 
 const app = express();
 app.use(express.json());
@@ -31,6 +34,7 @@ app.get("/api/articles/:article_id/comments", getArticleComments);
 app.post("/api/articles/:article_id/comments", postArticleComment);
 
 app.delete("/api/comments/:comment_id", removeComment);
+app.patch("/api/comments/:comment_id", patchComment);
 
 app.use((err, req, res, next) => {
   if (err.status && err.message) {
