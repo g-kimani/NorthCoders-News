@@ -448,6 +448,65 @@ describe("GET /api/users", () => {
   });
 });
 
+describe("PATCH /api/comments/:comment_id", () => {
+  test("PATCH - status: 200 - Responds with the updated comment", () => {
+    return request(app)
+      .patch("/api/comments/1")
+      .send({ incVotes: 5 })
+      .expect(200)
+      .then((response) => {
+        const { comment } = response.body;
+        expect(comment).toHaveProperty("comment_id", 1);
+        expect(comment).toHaveProperty("author", "butter_bridge");
+        expect(comment).toHaveProperty("created_at", expect.any(String));
+        expect(comment).toHaveProperty("votes", 21);
+      });
+  });
+  test("PATCH - status: 200 - Is able to decrease comment votes. Responds with the updated comment", () => {
+    return request(app)
+      .patch("/api/comments/3")
+      .send({ incVotes: -5 })
+      .expect(200)
+      .then((response) => {
+        const { comment } = response.body;
+        expect(comment).toHaveProperty("comment_id", 3);
+        expect(comment).toHaveProperty("author", "icellusedkars");
+        expect(comment).toHaveProperty("created_at", expect.any(String));
+        expect(comment).toHaveProperty("votes", 95);
+      });
+  });
+  test("PATCH - status: 404 - responds with 404 if comment not found", () => {
+    return request(app)
+      .patch("/api/comments/9999999")
+      .send({ incVotes: 5 })
+      .expect(404)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("404: Not Found");
+      });
+  });
+  test("PATCH - status: 400 - if comment_id is an invalid type", () => {
+    return request(app)
+      .patch("/api/comments/nonsense")
+      .send({ incVotes: 5 })
+      .expect(400)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("Bad Request: Invalid input");
+      });
+  });
+  test("PATCH - status: 400 - if comment_id is an invalid type", () => {
+    return request(app)
+      .patch("/api/comments/nonsense")
+      .send({ incVotes: "adasd" })
+      .expect(400)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("Bad Request: Invalid input");
+      });
+  });
+});
+
 describe("/api/users/:username", () => {
   test("GET - status: 200 - responds with an object with users details", () => {
     return request(app)
