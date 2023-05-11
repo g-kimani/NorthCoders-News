@@ -1,7 +1,8 @@
 const format = require("pg-format");
 const db = require("../db/connection.js");
+const { selectTopicBySlug } = require("./topics.model.js");
 
-exports.selectArticles = ({
+exports.selectArticles = async ({
   topic,
   sort_by = "created_at",
   order = "desc",
@@ -15,7 +16,15 @@ exports.selectArticles = ({
   );
 
   if (topic) {
-    selectQuery += format(`WHERE articles.topic = '%s'`, topic);
+    const topicObject = await selectTopicBySlug(topic);
+    if (topicObject) {
+      selectQuery += format(`WHERE articles.topic = '%s'`, topic);
+    } else {
+      return Promise.reject({
+        status: 404,
+        message: "404 Topic not found",
+      });
+    }
   }
 
   selectQuery += format(

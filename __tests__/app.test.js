@@ -63,13 +63,13 @@ describe("ARTICLES", () => {
           });
         });
     });
-    test("GET - status: 200 - returns empty array for topic that doesnt exist", () => {
+    test("GET - status: 404 - returns 404 for topic that doesnt exist", () => {
       return request(app)
         .get("/api/articles?topic=nonsense")
-        .expect(200)
+        .expect(404)
         .then((response) => {
-          const { articles } = response.body;
-          expect(articles).toHaveLength(0);
+          const { message } = response.body;
+          expect(message).toBe("404 Topic not found");
         });
     });
     test("GET - status: 200 - returns items sorted by query", () => {
