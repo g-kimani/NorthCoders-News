@@ -174,6 +174,19 @@ describe("PATCH /api/articles/:article_id", () => {
         );
       });
   });
+  test("PATCH - status: 200 - is able to decrement vote count", () => {
+    const patchRequest = {
+      incVotes: -5,
+    };
+    return request(app)
+      .patch("/api/articles/1")
+      .send(patchRequest)
+      .expect(200)
+      .then((response) => {
+        const { article } = response.body;
+        expect(article.votes).toBe(96);
+      });
+  });
   test("PATCH - status: 404 - article id does not exist", () => {
     const patchRequest = {
       incVotes: 1,
