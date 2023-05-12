@@ -622,3 +622,34 @@ describe("POST /api/articles", () => {
       });
   });
 });
+
+describe("POST /api/topic", () => {
+  test("POST - status: 201 - responds with the newly created topic", () => {
+    const postTopic = {
+      slug: "new-topic",
+      description: "a new topic",
+    };
+    return request(app)
+      .post("/api/topics")
+      .send(postTopic)
+      .expect(201)
+      .then((response) => {
+        const { topic } = response.body;
+        expect(topic.slug).toBe(postTopic.slug);
+        expect(topic.description).toBe(postTopic.description);
+      });
+  });
+  test("POST - status: 400 - bad request if slug field is missing", () => {
+    const postTopic = {
+      description: 1233,
+    };
+    return request(app)
+      .post("/api/topics")
+      .send(postTopic)
+      .expect(400)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("Bad Request: Invalid input");
+      });
+  });
+});
