@@ -1,5 +1,6 @@
 const {
   selectArticleById,
+  removeArticleById,
   createArticle,
   createArticleComment,
   selectArticleComments,
@@ -19,6 +20,15 @@ exports.getArticleById = (req, res, next) => {
   selectArticleById(article_id)
     .then((article) => {
       res.status(200).send({ article });
+    })
+    .catch((err) => next(err));
+};
+
+exports.deleteArticleById = (req, res, next) => {
+  const { article_id } = req.params;
+  removeArticleById(article_id)
+    .then(() => {
+      res.status(204).send();
     })
     .catch((err) => next(err));
 };

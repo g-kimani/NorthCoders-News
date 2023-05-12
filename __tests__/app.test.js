@@ -653,3 +653,27 @@ describe("POST /api/topic", () => {
       });
   });
 });
+
+describe("DELETE /api/articles/:article_id", () => {
+  test("DELETE - status: 204 - deletes the given article by id", () => {
+    return request(app).delete("/api/articles/1").expect(204);
+  });
+  test("DELETE - status: 404 - if article id doesnt exist", () => {
+    return request(app)
+      .delete("/api/articles/999999")
+      .expect(404)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("Not Found: Article 999999 does not exist");
+      });
+  });
+  test("DELETE - status: 400 - if article id is not a number", () => {
+    return request(app)
+      .delete("/api/articles/nonsense")
+      .expect(400)
+      .then((response) => {
+        const { message } = response.body;
+        expect(message).toBe("Bad Request: Invalid input");
+      });
+  });
+});
