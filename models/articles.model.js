@@ -85,6 +85,18 @@ exports.selectArticleById = (article_id) => {
     });
 };
 
+exports.removeArticleById = (article_id) => {
+  return this.articleExists(article_id).then((article) => {
+    return db
+      .query(`DELETE FROM comments WHERE article_id = $1;`, [article_id])
+      .then(() => {
+        return db.query("DELETE FROM articles WHERE article_id = $1", [
+          article_id,
+        ]);
+      });
+  });
+};
+
 exports.createArticle = ({
   author,
   title,
@@ -127,26 +139,19 @@ exports.createArticleComment = (article_id, comment) => {
 
 exports.selectArticleComments = (article_id, { limit = 10, p = 1 }) => {
   return this.articleExists(article_id)
-    .then((article) => {
-      if (!article) {
-        return Promise.reject({
-          status: 404,
-          message: `Not Found: Article ${article_id} does not exist`,
-        });
-      } else {
-        const selectCommentsQuery = format(
-          `
+    .then(() => {
+      const selectCommentsQuery = format(
+        `
               SELECT * FROM comments 
               WHERE article_id = %s
               ORDER BY created_at DESC
               LIMIT %s OFFSET %s
         `,
-          article_id,
-          limit,
-          (Number(p) - 1) * limit
-        );
-        return db.query(selectCommentsQuery);
-      }
+        article_id,
+        limit,
+        (Number(p) - 1) * limit
+      );
+      return db.query(selectCommentsQuery);
     })
     .then((result) => result.rows);
 };
@@ -154,7 +159,14 @@ exports.selectArticleComments = (article_id, { limit = 10, p = 1 }) => {
 exports.articleExists = (article_id) => {
   return db
     .query(`SELECT * FROM articles WHERE article_id = $1`, [article_id])
-    .then((result) => result.rows[0]);
+    .then((result) => {
+      if (!result.rows[0]) {
+        return Promise.reject({
+          status: 404,
+          message: `Not Found: Article ${article_id} does not exist`,
+        });
+      }
+    });
 };
 
 exports.updateArticle = (article_id, updateProperties) => {
