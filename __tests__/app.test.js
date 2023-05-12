@@ -205,6 +205,8 @@ describe("ARTICLES", () => {
         .expect(200)
         .then((response) => {
           const { comments } = response.body;
+          // limited to 10 comments per page
+          expect(comments).toHaveLength(10);
           comments.forEach((comment) => {
             expect(comment).toHaveProperty("comment_id", expect.any(Number));
             expect(comment).toHaveProperty("votes", expect.any(Number));
@@ -217,6 +219,16 @@ describe("ARTICLES", () => {
             descending: true,
             compare: (a, b) => new Date(a).getTime() - new Date(b).getTime(),
           });
+        });
+    });
+    test("GET - status: 200 - Can query for a certain page and limit amount of comments", () => {
+      return request(app)
+        .get("/api/articles/1/comments?limit=5&p=2")
+        .expect(200)
+        .then((response) => {
+          const { comments } = response.body;
+          expect(comments).toHaveLength(5);
+          expect(comments[0].comment_id).toBe(8);
         });
     });
     test("GET - status: 400 - invalid article id (anything NAN) given", () => {

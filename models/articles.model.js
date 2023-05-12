@@ -125,7 +125,7 @@ exports.createArticleComment = (article_id, comment) => {
   return db.query(insertCommentQuery).then((result) => result.rows[0]);
 };
 
-exports.selectArticleComments = (article_id) => {
+exports.selectArticleComments = (article_id, { limit = 10, p = 1 }) => {
   return this.articleExists(article_id)
     .then((article) => {
       if (!article) {
@@ -134,13 +134,18 @@ exports.selectArticleComments = (article_id) => {
           message: `Not Found: Article ${article_id} does not exist`,
         });
       } else {
-        return db.query(
-          `SELECT * FROM comments 
-        WHERE article_id = $1
-        ORDER BY created_at DESC;
-    `,
-          [article_id]
+        const selectCommentsQuery = format(
+          `
+              SELECT * FROM comments 
+              WHERE article_id = %s
+              ORDER BY created_at DESC
+              LIMIT %s OFFSET %s
+        `,
+          article_id,
+          limit,
+          (Number(p) - 1) * limit
         );
+        return db.query(selectCommentsQuery);
       }
     })
     .then((result) => result.rows);
