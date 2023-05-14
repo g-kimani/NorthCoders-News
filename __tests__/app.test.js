@@ -2,8 +2,11 @@ const request = require("supertest");
 const app = require("../app.js");
 const connection = require("../db/connection.js");
 const apiEndpoints = require("../endpoints.json");
+const seed = require("../db/seeds/seed.js");
+const testData = require("../db/data/test-data/index.js");
 
 afterAll(() => connection.end());
+beforeEach(() => seed(testData));
 
 describe("/api", () => {
   test("GET - status: 200 - responds with object detailing every api endpoint", () => {
@@ -17,23 +20,55 @@ describe("/api", () => {
   });
 });
 
-describe("/api/topics", () => {
-  test("GET - status: 200 - responds with array of topic objects", () => {
-    return request(app)
-      .get("/api/topics")
-      .expect(200)
-      .then((response) => {
-        const { topics } = response.body;
-        topics.forEach((topic) => {
-          expect(topic).toHaveProperty("slug", expect.any(String));
-          expect(topic).toHaveProperty("description", expect.any(String));
+describe("TOPICS", () => {
+  describe("GET /api/topics", () => {
+    test("GET - status: 200 - responds with array of topic objects", () => {
+      return request(app)
+        .get("/api/topics")
+        .expect(200)
+        .then((response) => {
+          const { topics } = response.body;
+          topics.forEach((topic) => {
+            expect(topic).toHaveProperty("slug", expect.any(String));
+            expect(topic).toHaveProperty("description", expect.any(String));
+          });
         });
-      });
+    });
+  });
+  describe("POST /api/topic", () => {
+    test("POST - status: 201 - responds with the newly created topic", () => {
+      const postTopic = {
+        slug: "new-topic",
+        description: "a new topic",
+      };
+      return request(app)
+        .post("/api/topics")
+        .send(postTopic)
+        .expect(201)
+        .then((response) => {
+          const { topic } = response.body;
+          expect(topic.slug).toBe(postTopic.slug);
+          expect(topic.description).toBe(postTopic.description);
+        });
+    });
+    test("POST - status: 400 - bad request if slug field is missing", () => {
+      const postTopic = {
+        description: 1233,
+      };
+      return request(app)
+        .post("/api/topics")
+        .send(postTopic)
+        .expect(400)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("Bad Request: Invalid input");
+        });
+    });
   });
 });
 
 describe("ARTICLES", () => {
-  describe("/api/articles", () => {
+  describe("GET /api/articles", () => {
     test("GET - status 200 - responds list of articles sorted date descending limited to 10 and total count 12", () => {
       return request(app)
         .get("/api/articles")
@@ -150,7 +185,82 @@ describe("ARTICLES", () => {
         });
     });
   });
-  describe("/api/articles/:article_id", () => {
+  describe("POST /api/articles", () => {
+    test("POST - status: 201 - responds with created article", () => {
+      const postArticle = {
+        author: "butter_bridge",
+        title: "I am a test",
+        body: "I was created in a test",
+        topic: "paper",
+        article_img_url: "im_an_image.com",
+      };
+      return request(app)
+        .post("/api/articles")
+        .send(postArticle)
+        .expect(201)
+        .then((response) => {
+          const { article } = response.body;
+          expect(article).toHaveProperty("article_id", expect.any(Number));
+          expect(article).toHaveProperty("author", "butter_bridge");
+          expect(article).toHaveProperty("title", "I am a test");
+          expect(article).toHaveProperty("body", "I was created in a test");
+          expect(article).toHaveProperty("topic", "paper");
+          expect(article).toHaveProperty("created_at", expect.any(String));
+          expect(article).toHaveProperty("votes", 0);
+          expect(article).toHaveProperty("article_img_url", "im_an_image.com");
+          expect(article).toHaveProperty("comment_count", 0);
+        });
+    });
+    test("POST - status: 200 - default image given if none in request", () => {
+      const postArticle = {
+        author: "butter_bridge",
+        title: "I am a test 2",
+        body: "I was created in a test 2",
+        topic: "paper",
+      };
+      return request(app)
+        .post("/api/articles")
+        .send(postArticle)
+        .expect(201)
+        .then((response) => {
+          const { article } = response.body;
+          expect(article.article_img_url).toBe("[default image here]");
+        });
+    });
+    test("POST - status: 404 - author not found", () => {
+      const postArticle = {
+        author: "test_author",
+        title: "I am a test 3",
+        body: "I was created in a test 3",
+        topic: "paper",
+      };
+      return request(app)
+        .post("/api/articles")
+        .send(postArticle)
+        .expect(404)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("404 Not Found");
+        });
+    });
+    test("POST - status: 404 - topic not found", () => {
+      const postArticle = {
+        author: "butter_bridge",
+        title: "I am a test 3",
+        body: "I was created in a test 3",
+        topic: "non-topic",
+      };
+      return request(app)
+        .post("/api/articles")
+        .send(postArticle)
+        .expect(404)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("404 Not Found");
+        });
+    });
+  });
+  describe("GET /api/articles/:article_id", () => {
     test("GET - status: 200 - responds with article object with correct keys", () => {
       return request(app)
         .get("/api/articles/1")
@@ -197,8 +307,113 @@ describe("ARTICLES", () => {
         });
     });
   });
-
-  describe("/api/articles/:article_id/comments", () => {
+  describe("PATCH /api/articles/:article_id", () => {
+    test("PATCH - status: 200 - responds with updated article", () => {
+      const patchRequest = {
+        incVotes: 1,
+      };
+      return request(app)
+        .patch("/api/articles/1")
+        .send(patchRequest)
+        .expect(200)
+        .then((response) => {
+          const { article } = response.body;
+          expect(article).toHaveProperty("article_id", 1);
+          expect(article).toHaveProperty("author", "butter_bridge");
+          expect(article).toHaveProperty(
+            "title",
+            "Living in the shadow of a great man"
+          );
+          expect(article).toHaveProperty(
+            "body",
+            "I find this existence challenging"
+          );
+          expect(article).toHaveProperty("topic", "mitch");
+          expect(article).toHaveProperty("created_at", expect.any(String));
+          expect(article).toHaveProperty("votes", 101);
+          expect(article).toHaveProperty(
+            "article_img_url",
+            "https://images.pexels.com/photos/158651/news-newsletter-newspaper-information-158651.jpeg?w=700&h=700"
+          );
+        });
+    });
+    test("PATCH - status: 200 - is able to decrement vote count", () => {
+      const patchRequest = {
+        incVotes: -5,
+      };
+      return request(app)
+        .patch("/api/articles/1")
+        .send(patchRequest)
+        .expect(200)
+        .then((response) => {
+          const { article } = response.body;
+          expect(article.votes).toBe(95);
+        });
+    });
+    test("PATCH - status: 404 - article id does not exist", () => {
+      const patchRequest = {
+        incVotes: 1,
+      };
+      return request(app)
+        .patch("/api/articles/101321312")
+        .send(patchRequest)
+        .expect(404)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("Not Found: Article 101321312 does not exist");
+        });
+    });
+    test("PATCH - status: 400 - article id is not a number", () => {
+      const patchRequest = {
+        incVotes: 1,
+      };
+      return request(app)
+        .patch("/api/articles/nonsense")
+        .send(patchRequest)
+        .expect(400)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("Bad Request: Invalid input");
+        });
+    });
+    test("PATCH - status: 400 - incVotes is not a number", () => {
+      const patchRequest = {
+        incVotes: "nonsense",
+      };
+      return request(app)
+        .patch("/api/articles/1")
+        .send(patchRequest)
+        .expect(400)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("Bad Request: Invalid input");
+        });
+    });
+  });
+  describe("DELETE /api/articles/:article_id", () => {
+    test("DELETE - status: 204 - deletes the given article by id", () => {
+      return request(app).delete("/api/articles/1").expect(204);
+    });
+    test("DELETE - status: 404 - if article id doesnt exist", () => {
+      return request(app)
+        .delete("/api/articles/999999")
+        .expect(404)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("Not Found: Article 999999 does not exist");
+        });
+    });
+    test("DELETE - status: 400 - if article id is not a number", () => {
+      return request(app)
+        .delete("/api/articles/nonsense")
+        .expect(400)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("Bad Request: Invalid input");
+        });
+    });
+  });
+  describe("GET /api/articles/:article_id/comments", () => {
     test("GET - status: 200 - responds with list of comments for article, ordered date descending", () => {
       return request(app)
         .get("/api/articles/1/comments")
@@ -259,421 +474,207 @@ describe("ARTICLES", () => {
         });
     });
   });
-});
-
-describe("POST /api/articles/:article_id/comments", () => {
-  test("POST - status: 201 - responds with posted comment", () => {
-    const sendComment = {
-      username: "butter_bridge",
-      body: "I am a test comment",
-    };
-    return request(app)
-      .post("/api/articles/1/comments")
-      .send(sendComment)
-      .expect(201)
-      .then((response) => {
-        const { comment } = response.body;
-        expect(comment).toHaveProperty("comment_id", 19);
-        expect(comment).toHaveProperty("votes", 0);
-        expect(comment).toHaveProperty("created_at", expect.any(String));
-        expect(comment).toHaveProperty("body", "I am a test comment");
-        expect(comment).toHaveProperty("author", "butter_bridge");
-      });
-  });
-  test("POST - status: 400 - error if no username or body provided", () => {
-    const sendComment = {
-      username: "butter_bridge",
-    };
-    return request(app)
-      .post("/api/articles/1/comments")
-      .send(sendComment)
-      .expect(400)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("Bad Request: Invalid input");
-      });
-  });
-  test("POST - status: 404 - error if username does not exist", () => {
-    const sendComment = {
-      username: 13123,
-      body: "I am a body",
-    };
-    return request(app)
-      .post("/api/articles/10/comments")
-      .send(sendComment)
-      .expect(404)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("404 Not Found");
-      });
-  });
-  test("POST - status: 404 - error if article does not exist", () => {
-    const sendComment = {
-      username: "butter_bridge",
-      body: "I am a body",
-    };
-    return request(app)
-      .post("/api/articles/10001332/comments")
-      .send(sendComment)
-      .expect(404)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("404 Not Found");
-      });
-  });
-  test("POST - status: 400 - error if article_id is not a valid number", () => {
-    const sendComment = {
-      username: "butter_bridge",
-      body: "I am a body",
-    };
-    return request(app)
-      .post("/api/articles/nonsense/comments")
-      .send(sendComment)
-      .expect(400)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("Bad Request: Invalid input");
-      });
-  });
-});
-
-describe("DELETE /api/comments/:comment_id", () => {
-  test("DELETE - status: 204 - responds with 204 when succesful and no content", () => {
-    return request(app).delete("/api/comments/2").expect(204);
-  });
-  test("DELETE - status: 404 - comment_id cannot be found", () => {
-    return request(app)
-      .delete("/api/comments/123043290")
-      .expect(404)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("404: Not Found");
-      });
-  });
-  test("DELETE - status: 400 - comment_id provided is not correct type number", () => {
-    return request(app)
-      .delete("/api/comments/nonsense")
-      .expect(400)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("Bad Request: Invalid input");
-      });
-  });
-});
-
-describe("PATCH /api/articles/:article_id", () => {
-  test("PATCH - status: 200 - responds with updated article", () => {
-    const patchRequest = {
-      incVotes: 1,
-    };
-    return request(app)
-      .patch("/api/articles/1")
-      .send(patchRequest)
-      .expect(200)
-      .then((response) => {
-        const { article } = response.body;
-        expect(article).toHaveProperty("article_id", 1);
-        expect(article).toHaveProperty("author", "butter_bridge");
-        expect(article).toHaveProperty(
-          "title",
-          "Living in the shadow of a great man"
-        );
-        expect(article).toHaveProperty(
-          "body",
-          "I find this existence challenging"
-        );
-        expect(article).toHaveProperty("topic", "mitch");
-        expect(article).toHaveProperty("created_at", expect.any(String));
-        expect(article).toHaveProperty("votes", 101);
-        expect(article).toHaveProperty(
-          "article_img_url",
-          "https://images.pexels.com/photos/158651/news-newsletter-newspaper-information-158651.jpeg?w=700&h=700"
-        );
-      });
-  });
-  test("PATCH - status: 200 - is able to decrement vote count", () => {
-    const patchRequest = {
-      incVotes: -5,
-    };
-    return request(app)
-      .patch("/api/articles/1")
-      .send(patchRequest)
-      .expect(200)
-      .then((response) => {
-        const { article } = response.body;
-        expect(article.votes).toBe(96);
-      });
-  });
-  test("PATCH - status: 404 - article id does not exist", () => {
-    const patchRequest = {
-      incVotes: 1,
-    };
-    return request(app)
-      .patch("/api/articles/101321312")
-      .send(patchRequest)
-      .expect(404)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("Not Found: Article 101321312 does not exist");
-      });
-  });
-  test("PATCH - status: 400 - article id is not a number", () => {
-    const patchRequest = {
-      incVotes: 1,
-    };
-    return request(app)
-      .patch("/api/articles/nonsense")
-      .send(patchRequest)
-      .expect(400)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("Bad Request: Invalid input");
-      });
-  });
-  test("PATCH - status: 400 - incVotes is not a number", () => {
-    const patchRequest = {
-      incVotes: "nonsense",
-    };
-    return request(app)
-      .patch("/api/articles/1")
-      .send(patchRequest)
-      .expect(400)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("Bad Request: Invalid input");
-      });
-  });
-});
-
-describe("GET /api/users", () => {
-  test("GET - status: 200 - Responds with array of users", () => {
-    return request(app)
-      .get("/api/users")
-      .expect(200)
-      .then((response) => {
-        const { users } = response.body;
-        expect(users.length > 0).toBe(true);
-        users.forEach((user) => {
-          expect(user).toHaveProperty("username", expect.any(String));
-          expect(user).toHaveProperty("name", expect.any(String));
-          expect(user).toHaveProperty("avatar_url", expect.any(String));
+  describe("POST /api/articles/:article_id/comments", () => {
+    test("POST - status: 201 - responds with posted comment", () => {
+      const sendComment = {
+        username: "butter_bridge",
+        body: "I am a test comment",
+      };
+      return request(app)
+        .post("/api/articles/1/comments")
+        .send(sendComment)
+        .expect(201)
+        .then((response) => {
+          const { comment } = response.body;
+          expect(comment).toHaveProperty("comment_id", 19);
+          expect(comment).toHaveProperty("votes", 0);
+          expect(comment).toHaveProperty("created_at", expect.any(String));
+          expect(comment).toHaveProperty("body", "I am a test comment");
+          expect(comment).toHaveProperty("author", "butter_bridge");
         });
-      });
+    });
+    test("POST - status: 400 - error if no username or body provided", () => {
+      const sendComment = {
+        username: "butter_bridge",
+      };
+      return request(app)
+        .post("/api/articles/1/comments")
+        .send(sendComment)
+        .expect(400)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("Bad Request: Invalid input");
+        });
+    });
+    test("POST - status: 404 - error if username does not exist", () => {
+      const sendComment = {
+        username: 13123,
+        body: "I am a body",
+      };
+      return request(app)
+        .post("/api/articles/10/comments")
+        .send(sendComment)
+        .expect(404)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("404 Not Found");
+        });
+    });
+    test("POST - status: 404 - error if article does not exist", () => {
+      const sendComment = {
+        username: "butter_bridge",
+        body: "I am a body",
+      };
+      return request(app)
+        .post("/api/articles/10001332/comments")
+        .send(sendComment)
+        .expect(404)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("404 Not Found");
+        });
+    });
+    test("POST - status: 400 - error if article_id is not a valid number", () => {
+      const sendComment = {
+        username: "butter_bridge",
+        body: "I am a body",
+      };
+      return request(app)
+        .post("/api/articles/nonsense/comments")
+        .send(sendComment)
+        .expect(400)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("Bad Request: Invalid input");
+        });
+    });
   });
 });
 
-describe("PATCH /api/comments/:comment_id", () => {
-  test("PATCH - status: 200 - Responds with the updated comment", () => {
-    return request(app)
-      .patch("/api/comments/1")
-      .send({ incVotes: 5 })
-      .expect(200)
-      .then((response) => {
-        const { comment } = response.body;
-        expect(comment).toHaveProperty("comment_id", 1);
-        expect(comment).toHaveProperty("author", "butter_bridge");
-        expect(comment).toHaveProperty("created_at", expect.any(String));
-        expect(comment).toHaveProperty("votes", 21);
-      });
+describe("COMMENTS", () => {
+  describe("PATCH /api/comments/:comment_id", () => {
+    test("PATCH - status: 200 - Responds with the updated comment", () => {
+      return request(app)
+        .patch("/api/comments/1")
+        .send({ incVotes: 5 })
+        .expect(200)
+        .then((response) => {
+          const { comment } = response.body;
+          expect(comment).toHaveProperty("comment_id", 1);
+          expect(comment).toHaveProperty("author", "butter_bridge");
+          expect(comment).toHaveProperty("created_at", expect.any(String));
+          expect(comment).toHaveProperty("votes", 21);
+        });
+    });
+    test("PATCH - status: 200 - Is able to decrease comment votes. Responds with the updated comment", () => {
+      return request(app)
+        .patch("/api/comments/3")
+        .send({ incVotes: -5 })
+        .expect(200)
+        .then((response) => {
+          const { comment } = response.body;
+          expect(comment).toHaveProperty("comment_id", 3);
+          expect(comment).toHaveProperty("author", "icellusedkars");
+          expect(comment).toHaveProperty("created_at", expect.any(String));
+          expect(comment).toHaveProperty("votes", 95);
+        });
+    });
+    test("PATCH - status: 404 - responds with 404 if comment not found", () => {
+      return request(app)
+        .patch("/api/comments/9999999")
+        .send({ incVotes: 5 })
+        .expect(404)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("404: Not Found");
+        });
+    });
+    test("PATCH - status: 400 - if comment_id is an invalid type", () => {
+      return request(app)
+        .patch("/api/comments/nonsense")
+        .send({ incVotes: 5 })
+        .expect(400)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("Bad Request: Invalid input");
+        });
+    });
+    test("PATCH - status: 400 - if comment_id is an invalid type", () => {
+      return request(app)
+        .patch("/api/comments/nonsense")
+        .send({ incVotes: "adasd" })
+        .expect(400)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("Bad Request: Invalid input");
+        });
+    });
   });
-  test("PATCH - status: 200 - Is able to decrease comment votes. Responds with the updated comment", () => {
-    return request(app)
-      .patch("/api/comments/3")
-      .send({ incVotes: -5 })
-      .expect(200)
-      .then((response) => {
-        const { comment } = response.body;
-        expect(comment).toHaveProperty("comment_id", 3);
-        expect(comment).toHaveProperty("author", "icellusedkars");
-        expect(comment).toHaveProperty("created_at", expect.any(String));
-        expect(comment).toHaveProperty("votes", 95);
-      });
-  });
-  test("PATCH - status: 404 - responds with 404 if comment not found", () => {
-    return request(app)
-      .patch("/api/comments/9999999")
-      .send({ incVotes: 5 })
-      .expect(404)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("404: Not Found");
-      });
-  });
-  test("PATCH - status: 400 - if comment_id is an invalid type", () => {
-    return request(app)
-      .patch("/api/comments/nonsense")
-      .send({ incVotes: 5 })
-      .expect(400)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("Bad Request: Invalid input");
-      });
-  });
-  test("PATCH - status: 400 - if comment_id is an invalid type", () => {
-    return request(app)
-      .patch("/api/comments/nonsense")
-      .send({ incVotes: "adasd" })
-      .expect(400)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("Bad Request: Invalid input");
-      });
-  });
-});
-
-describe("/api/users/:username", () => {
-  test("GET - status: 200 - responds with an object with users details", () => {
-    return request(app)
-      .get("/api/users/butter_bridge")
-      .expect(200)
-      .then((response) => {
-        const { user } = response.body;
-        expect(user).toHaveProperty("username", "butter_bridge");
-        expect(user).toHaveProperty("name", "jonny");
-        expect(user).toHaveProperty(
-          "avatar_url",
-          "https://www.healthytherapies.com/wp-content/uploads/2016/06/Lime3.jpg"
-        );
-      });
-  });
-  test("GET - status: 404 - responds with error if username not found", () => {
-    return request(app)
-      .get("/api/users/not-in-data")
-      .expect(404)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("404 Not found");
-      });
-  });
-});
-
-describe("POST /api/articles", () => {
-  test("POST - status: 201 - responds with created article", () => {
-    const postArticle = {
-      author: "butter_bridge",
-      title: "I am a test",
-      body: "I was created in a test",
-      topic: "paper",
-      article_img_url: "im_an_image.com",
-    };
-    return request(app)
-      .post("/api/articles")
-      .send(postArticle)
-      .expect(201)
-      .then((response) => {
-        const { article } = response.body;
-        expect(article).toHaveProperty("article_id", expect.any(Number));
-        expect(article).toHaveProperty("author", "butter_bridge");
-        expect(article).toHaveProperty("title", "I am a test");
-        expect(article).toHaveProperty("body", "I was created in a test");
-        expect(article).toHaveProperty("topic", "paper");
-        expect(article).toHaveProperty("created_at", expect.any(String));
-        expect(article).toHaveProperty("votes", 0);
-        expect(article).toHaveProperty("article_img_url", "im_an_image.com");
-        expect(article).toHaveProperty("comment_count", 0);
-      });
-  });
-  test("POST - status: 200 - default image given if none in request", () => {
-    const postArticle = {
-      author: "butter_bridge",
-      title: "I am a test 2",
-      body: "I was created in a test 2",
-      topic: "paper",
-    };
-    return request(app)
-      .post("/api/articles")
-      .send(postArticle)
-      .expect(201)
-      .then((response) => {
-        const { article } = response.body;
-        expect(article.article_img_url).toBe("[default image here]");
-      });
-  });
-  test("POST - status: 404 - author not found", () => {
-    const postArticle = {
-      author: "test_author",
-      title: "I am a test 3",
-      body: "I was created in a test 3",
-      topic: "paper",
-    };
-    return request(app)
-      .post("/api/articles")
-      .send(postArticle)
-      .expect(404)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("404 Not Found");
-      });
-  });
-  test("POST - status: 404 - topic not found", () => {
-    const postArticle = {
-      author: "butter_bridge",
-      title: "I am a test 3",
-      body: "I was created in a test 3",
-      topic: "non-topic",
-    };
-    return request(app)
-      .post("/api/articles")
-      .send(postArticle)
-      .expect(404)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("404 Not Found");
-      });
+  describe("DELETE /api/comments/:comment_id", () => {
+    test("DELETE - status: 204 - responds with 204 when succesful and no content", () => {
+      return request(app).delete("/api/comments/2").expect(204);
+    });
+    test("DELETE - status: 404 - comment_id cannot be found", () => {
+      return request(app)
+        .delete("/api/comments/123043290")
+        .expect(404)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("404: Not Found");
+        });
+    });
+    test("DELETE - status: 400 - comment_id provided is not correct type number", () => {
+      return request(app)
+        .delete("/api/comments/nonsense")
+        .expect(400)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("Bad Request: Invalid input");
+        });
+    });
   });
 });
 
-describe("POST /api/topic", () => {
-  test("POST - status: 201 - responds with the newly created topic", () => {
-    const postTopic = {
-      slug: "new-topic",
-      description: "a new topic",
-    };
-    return request(app)
-      .post("/api/topics")
-      .send(postTopic)
-      .expect(201)
-      .then((response) => {
-        const { topic } = response.body;
-        expect(topic.slug).toBe(postTopic.slug);
-        expect(topic.description).toBe(postTopic.description);
-      });
+describe("USERS", () => {
+  describe("GET /api/users", () => {
+    test("GET - status: 200 - Responds with array of users", () => {
+      return request(app)
+        .get("/api/users")
+        .expect(200)
+        .then((response) => {
+          const { users } = response.body;
+          expect(users.length > 0).toBe(true);
+          users.forEach((user) => {
+            expect(user).toHaveProperty("username", expect.any(String));
+            expect(user).toHaveProperty("name", expect.any(String));
+            expect(user).toHaveProperty("avatar_url", expect.any(String));
+          });
+        });
+    });
   });
-  test("POST - status: 400 - bad request if slug field is missing", () => {
-    const postTopic = {
-      description: 1233,
-    };
-    return request(app)
-      .post("/api/topics")
-      .send(postTopic)
-      .expect(400)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("Bad Request: Invalid input");
-      });
-  });
-});
-
-describe("DELETE /api/articles/:article_id", () => {
-  test("DELETE - status: 204 - deletes the given article by id", () => {
-    return request(app).delete("/api/articles/1").expect(204);
-  });
-  test("DELETE - status: 404 - if article id doesnt exist", () => {
-    return request(app)
-      .delete("/api/articles/999999")
-      .expect(404)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("Not Found: Article 999999 does not exist");
-      });
-  });
-  test("DELETE - status: 400 - if article id is not a number", () => {
-    return request(app)
-      .delete("/api/articles/nonsense")
-      .expect(400)
-      .then((response) => {
-        const { message } = response.body;
-        expect(message).toBe("Bad Request: Invalid input");
-      });
+  describe("GET /api/users/:username", () => {
+    test("GET - status: 200 - responds with an object with users details", () => {
+      return request(app)
+        .get("/api/users/butter_bridge")
+        .expect(200)
+        .then((response) => {
+          const { user } = response.body;
+          expect(user).toHaveProperty("username", "butter_bridge");
+          expect(user).toHaveProperty("name", "jonny");
+          expect(user).toHaveProperty(
+            "avatar_url",
+            "https://www.healthytherapies.com/wp-content/uploads/2016/06/Lime3.jpg"
+          );
+        });
+    });
+    test("GET - status: 404 - responds with error if username not found", () => {
+      return request(app)
+        .get("/api/users/not-in-data")
+        .expect(404)
+        .then((response) => {
+          const { message } = response.body;
+          expect(message).toBe("404 Not found");
+        });
+    });
   });
 });
