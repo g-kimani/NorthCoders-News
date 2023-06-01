@@ -165,7 +165,7 @@ exports.selectArticleComments = (article_id, { limit = 10, p = 1 }) => {
       return {
         total_count: rows[0]?.total_count ?? 0,
         comments: rows.map((row) => {
-          delete row.delete_count;
+          delete row.total_count;
           return row;
         }),
       };
