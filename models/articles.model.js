@@ -42,7 +42,7 @@ exports.selectArticles = async ({
   selectQuery += format(
     `
     GROUP BY articles.article_id
-    ORDER BY articles.%I %s
+    ORDER BY %I %s
     LIMIT %s OFFSET %s`,
     sort_by,
     order,
