@@ -32,6 +32,13 @@ exports.selectArticles = async ({
     }
   }
 
+  const validSortKeys = ["created_at", "comment_count", "votes"];
+  if (!validSortKeys.includes(sort_by)) {
+    return Promise.reject({
+      status: 400,
+      message: "Bad Request: Invalid input",
+    });
+  }
   selectQuery += format(
     `
     GROUP BY articles.article_id
@@ -142,18 +149,27 @@ exports.selectArticleComments = (article_id, { limit = 10, p = 1 }) => {
     .then(() => {
       const selectCommentsQuery = format(
         `
-              SELECT * FROM comments 
+              SELECT *, (SELECT CAST(COUNT(*) AS INT) FROM COMMENTS WHERE article_id = %s) AS total_count FROM comments 
               WHERE article_id = %s
               ORDER BY created_at DESC
               LIMIT %s OFFSET %s
         `,
+        article_id,
         article_id,
         limit,
         (Number(p) - 1) * limit
       );
       return db.query(selectCommentsQuery);
     })
-    .then((result) => result.rows);
+    .then(({ rows }) => {
+      return {
+        total_count: rows[0]?.total_count ?? 0,
+        comments: rows.map((row) => {
+          delete row.delete_count;
+          return row;
+        }),
+      };
+    });
 };
 
 exports.articleExists = (article_id) => {

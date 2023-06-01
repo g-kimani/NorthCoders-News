@@ -53,8 +53,8 @@ exports.postArticleComment = (req, res, next) => {
 exports.getArticleComments = (req, res, next) => {
   const { article_id } = req.params;
   selectArticleComments(article_id, req.query)
-    .then((comments) => {
-      res.status(200).send({ comments });
+    .then(({ comments, total_count }) => {
+      res.status(200).send({ comments, total_count });
     })
     .catch((err) => next(err));
 };

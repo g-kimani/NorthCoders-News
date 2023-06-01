@@ -10,7 +10,8 @@
     "sql-play": "psql -f ./db/playground.sql",
     "seed": "node ./db/seeds/run-seed.js",
     "test": "NODE_ENV=test npm run seed && jest",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "dev": "NODE_ENV=test npm run seed && npm run start"
   },
   "repository": {
     "type": "git",
