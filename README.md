@@ -2,7 +2,7 @@
 
 Welcome to the News API, a RESTful API that interacts with a news database containing articles, topics, users, and comments. Built with Express and PostgreSQL, the API offers endpoints for retrieving and modifying data from the database.
 
-Link to hosted version: [Live Demo](https://northcoders-news.onrender.com)
+Link to hosted version: [Live Demo](https://northcoders-news.onrender.com/api)
 
 ## Getting Started
 
